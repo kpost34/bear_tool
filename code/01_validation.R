@@ -1,8 +1,39 @@
-# Validation checks for data
+# Data import and validation checks for data
+
+
+# Data Import=======================================================================================
+import_data <- function(source, path, dataset_name, pkg){
+  # Files
+  if(source=="file"){
+    ext <- tools::file_ext(path)
+    if(ext=="csv"){
+      raw_data <- read.csv(path)
+    } else if(ext=="xlsx"){
+      raw_data <- read_excel(path) %>%
+        as.data.frame()
+    }
+
+    #store message
+    import_msg <- "Success: Raw data imported from file."
+    
+  } else if(source=="package"){
+    data(dataset_name, package=pkg, envir=environment())
+    raw_data <- get(dataset_name)
+    
+    #store message
+    import_msg <- "Success: Raw data imported from package."
+  }
+  
+  # Print message & return data
+  message(import_msg)
+  return(raw_data)
+
+}
+
 
 
 # Check ID==========================================================================================
-check_id <- function(df, id_col=NA){
+check_id <- function(df, dataset_name, id_col=NA){
   # If user-defined id_col absent
   if(!is.na(id_col) & !id_col %in% names(df)){
     #store obj
@@ -10,7 +41,9 @@ check_id <- function(df, id_col=NA){
     id_msg <- paste(
       "Error: Specified id_col", 
       paste0("'", id_col, "'"),  
-      "not found.")
+      "not found for dataset",
+      paste0(dataset_name, ".")
+    )
     #print msg
     warning(id_msg)
     #package obj
@@ -51,6 +84,7 @@ check_id <- function(df, id_col=NA){
       #package objects
       suitcase=list(
         data=df,
+        dataset_name=dataset_name,
         status=id_status,
         message=id_msg,
         id_label=id_label
@@ -332,9 +366,9 @@ check_min_obs <- function(suitcase){
 
 
 # Validate Data (function)==========================================================================
-validate_data <- function(df, target_id_col=NA, target_dose_col, target_response_col){
+validate_data <- function(df, dataset_name, target_id_col=NA, target_dose_col, target_response_col){
   # 1. Initialize Suitcase
-  suitcase <- check_id(df, id_col=target_id_col)
+  suitcase <- check_id(df, dataset_name, id_col=target_id_col)
   
   # 2. Presence Gate
   if(suitcase$status=="Success"){
@@ -357,7 +391,7 @@ validate_data <- function(df, target_id_col=NA, target_dose_col, target_response
   }
   
   # 6. Minimum Observation Gate
-  if(suitcase$status=="Sucess"){
+  if(suitcase$status=="Success"){
     suitcase <- check_min_obs(suitcase)
   }
   
