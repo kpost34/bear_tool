@@ -281,7 +281,7 @@ extract_winning_stats <- function(suitcase){
   df_data <- suitcase$data
   
   # Calculate metrics for DF
-  #psuedo r2
+  #pseudo r2
   if(str_detect(mod_name, "LL|BC")){
     response_pred <- predict(mod)
     response_obs <- df_data[["response"]]
@@ -300,7 +300,7 @@ extract_winning_stats <- function(suitcase){
   ## Sigmoids
   if(str_detect(mod_name, "LL|BC")){
     #ed
-    df_ed <- ED(mod, 50, interval="delta") %>% 
+    df_ed <- ED(mod, 50, interval="delta", display=FALSE) %>% 
       as_tibble() %>%
       clean_names() %>%
       #prevent negative lower bounds
@@ -319,7 +319,7 @@ extract_winning_stats <- function(suitcase){
     #metrics
     df_metrics <- tibble(
       aic=AIC(mod),
-      r2_psuedo=r2_sigmoid,
+      r2_pseudo=r2_sigmoid,
       p_val_slope=summary(mod)$coefficients["b:(Intercept)", "p-value"],
       resid_std_error=summary(mod)$rseMat[1, 1]
     )
@@ -360,7 +360,7 @@ extract_winning_stats <- function(suitcase){
       #metrics
       df_metrics <- tibble(
         aic=AIC(mod),
-        r2_psuedo=if(mod_name=="LM"){summary(mod)$r.squared} else{0},
+        r2_pseudo=if(mod_name=="LM"){summary(mod)$r.squared} else{0},
         p_val_slope=if(mod_name=="LM"){
           summary(mod)$coefficients["dose", "Pr(>|t|)"]} else{NA_real_},
         resid_std_error=summary(mod)$sigma
