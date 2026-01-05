@@ -95,7 +95,7 @@ export_summary <- function(suitcase){
   
   # Clean up results data
   df_results <- df_results0 %>%
-    mutate(across(where(is.numeric), round, 4)) %>%
+    mutate(across(where(is.numeric), ~round(.x, 4))) %>%
     set_names(
       c("ED50 Estimate", "ED50 Std. Error", "ED50 95% CI (Lower)", "ED50 95% CI (Upper)", 
         "Slope (b)", "Lower Limit (c)", "Upper Limit (d)", "Asymmetry (f)", "AIC", 
