@@ -145,6 +145,7 @@ get_summary_table <- function(suitcase){
     ) %>%
     DT::datatable(
       rownames=FALSE,
+      caption="Table 1: Potency Summary and Model Fit",
       options=list(
         dom="t",
         ordering=FALSE,
