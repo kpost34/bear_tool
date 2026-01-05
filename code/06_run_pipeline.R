@@ -25,13 +25,16 @@ initialize_filesystem()
 
 
 # Data Acquisition==================================================================================
-df_raw_data <- import_data(source="package", dataset_name="ryegrass", pkg="drc")
+## Define target_name
+target_name <- "ryegrass"
+
+df_raw_data <- import_data(source="package", dataset_name=target_name, pkg="drc")
 
 
 
 # Run Pipeline======================================================================================
 ## Step 1: Validate
-my_suitcase <- validate_data(df_raw_data, dataset_name="ryegrass", target_dose_col="conc", 
+my_suitcase <- validate_data(df_raw_data, dataset_name=target_name, target_dose_col="conc", 
                              target_response_col="rootl")
 
 
