@@ -49,16 +49,16 @@ export_plots <- function(suitcase){
   #audit-png
   ggsave(filename=fp_audit_png,
          plot=plot_audit,
-         width=10,
-         height=7,
+         width=7,
+         height=5,
          units="in",
          dpi=300)
   
   #audit-pdf
   ggsave(filename=fp_audit_pdf,
          plot=plot_audit,
-         width=10,
-         height=7,
+         width=7,
+         height=5,
          units="in",
          dpi=300)
   
