@@ -323,21 +323,6 @@ visualize_audit <- function(suitcase){
   
   pal <- status_palettes[[status]]
   
-  # Build caption
-  cap_snr <- paste("SNR:",
-                    round(suitcase$snr, 2),
-                    "|")
-  
-  cap_status_msg <- paste0("Status: ",
-                           suitcase$status,
-                           "\n",
-                           suitcase$message)
-  
-  cap <- if(!is.null(suitcase$snr)){
-    paste(cap_snr, cap_status_msg)
-  } else{cap_status_msg}
-
-  
   # Extract and update suitcase DFs
   dose_min_shift <- suitcase$data %>%
     filter(dose!=0) %>%
@@ -359,6 +344,10 @@ visualize_audit <- function(suitcase){
     mutate(
       dose_up=ifelse(dose==0, dose_min_shift, dose)
     )
+  
+  # Create labels
+  dose_lab <- suitcase$metadata$x_label
+  response_lab <- suitcase$metadata$y_label
   
   # Create plot
   plot_obj <- df_data %>%
@@ -387,12 +376,14 @@ visualize_audit <- function(suitcase){
                                 "non-outlier"=pal$raw_points)) +
     scale_shape_manual(values=c("outlier"=4, "non-outlier"=19)) +
     scale_x_log10(
-                  breaks=df_stats$dose_up,
-                  labels=as.character(df_stats$dose),
-                  minor_breaks=NULL) +
-    labs(x=suitcase$dose_label,
-         y=suitcase$response_label,
-         caption=cap) +
+      breaks=df_stats$dose_up,
+      labels=as.character(df_stats$dose),
+      minor_breaks=NULL
+    ) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.1))) +
+    labs(x=dose_lab,
+         y=response_lab
+    ) +
     theme_bw() +
     theme(
       plot.caption=element_text(hjust=0)
