@@ -1,0 +1,17 @@
+# Injects x and y axis labels used in plots for reports
+
+
+add_metadata <- function(suitcase, x_name, x_unit, y_name, y_unit) {
+  # Construct strings and store components
+  suitcase$metadata <- list(
+    x_name  = x_name,
+    y_name  = y_name,
+    x_unit  = x_unit,
+    y_unit  = y_unit,
+    x_label = paste0(x_name, " (", x_unit, ")"),
+    y_label = paste0(y_name, " (", y_unit, ")")
+  )
+  
+  return(suitcase)
+}
+
