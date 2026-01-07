@@ -1,4 +1,4 @@
-# Data import and validation checks for data
+# Data import and validation checks 
 
 
 # Data Import=======================================================================================
@@ -33,14 +33,14 @@ import_data <- function(source, path, dataset_name, pkg){
 
 
 # Check ID==========================================================================================
-check_id <- function(df, dataset_name, id_col=NA){
-  # If user-defined id_col absent
-  if(!is.na(id_col) & !id_col %in% names(df)){
+check_id <- function(df, dataset_name, target_id_col=NA){
+  # If user-defined target_id_col absent
+  if(!is.na(target_id_col) & !target_id_col %in% names(df)){
     #store obj
     id_status <- "Failed"
     id_msg <- paste(
-      "Error: Specified id_col", 
-      paste0("'", id_col, "'"),  
+      "Error: Specified target_id_col", 
+      paste0("'", target_id_col, "'"),  
       "not found for dataset",
       paste0(dataset_name, ".")
     )
@@ -54,20 +54,21 @@ check_id <- function(df, dataset_name, id_col=NA){
     #return
     return(suitcase)
       
-    # If user-defined id_col present
+    # If user-defined target_id_col present
     } else{
-      if(!is.na(id_col)){
-        #update df & store objs
-        if("id" %in% names(df)){
+      if(!is.na(target_id_col)){
+        #check if there is an existing column named "id" that was not user-specified,
+          #and rename to id_orig
+        if("id" %in% names(df) & target_id_col!="id"){
           df <- rename(df, id_orig=id)
         }
-        df <- rename(df, id:=!!sym(id_col)) %>%
+        df <- rename(df, id:=!!sym(target_id_col)) %>%
           as_tibble()
         id_status <- "Success"
         id_msg <- ""
-        id_label <- id_col
+        id_label <- target_id_col
         
-      # If id_col not user-defined
+      # If target_id_col not user-defined
       } else{
           if("id" %in% names(df)){
             df <- rename(df, id_orig=id)
@@ -368,7 +369,7 @@ check_min_obs <- function(suitcase){
 # Validate Data (function)==========================================================================
 validate_data <- function(df, dataset_name, target_id_col=NA, target_dose_col, target_response_col){
   # 1. Initialize Suitcase
-  suitcase <- check_id(df, dataset_name, id_col=target_id_col)
+  suitcase <- check_id(df, dataset_name, target_id_col=target_id_col)
   
   # 2. Presence Gate
   if(suitcase$status=="Success"){
