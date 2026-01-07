@@ -1,4 +1,4 @@
-# EDA of drc ryegrass dataset
+# Dataset Auditing Functions
 
 
 # Calculate Dose Stats==============================================================================
@@ -74,14 +74,14 @@ check_dose_range <- function(suitcase){
   df <- suitcase$data
   
   # Store objs
-  max_dose <- max(df$dose)
+  dose_max <- max(df$dose)
   
-  min_dose <- df %>%
+  dose_min <- df %>%
     filter(dose!=0) %>%
     pull(dose) %>%
     min()
   
-  dose_range <- max_dose/min_dose
+  dose_range <- dose_max/dose_min
   suitcase$dose_ratio <- dose_range
   
   # Small dose range
@@ -97,7 +97,7 @@ check_dose_range <- function(suitcase){
   
   }
   
-  # Return suitcae
+  # Return suitcase
   return(suitcase)
 }
 
