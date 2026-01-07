@@ -1,4 +1,4 @@
-# Initialize filesystem and export plots, summary table, model, and suitcase
+# Initialize Filesystem and Export Plots, Summary Table, Model, and Suitcase Functions
 
 
 # Set Up Function===================================================================================
@@ -46,37 +46,19 @@ export_plots <- function(suitcase){
   fp_final_pdf <- here(fp_plot, paste0(name, "_", nm_final, ".pdf"))
   
   # Save plots
-  #audit-png
-  ggsave(filename=fp_audit_png,
-         plot=plot_audit,
-         width=7,
-         height=5,
-         units="in",
-         dpi=300)
+  ## create vectors
+  fps <- c(fp_audit_png, fp_audit_pdf, fp_final_png, fp_final_pdf) 
   
-  #audit-pdf
-  ggsave(filename=fp_audit_pdf,
-         plot=plot_audit,
-         width=7,
-         height=5,
-         units="in",
-         dpi=300)
+  plots <- rep(list(plot_audit, plot_final), each=2)
   
-  #final-png
-  ggsave(filename=fp_final_png,
-         plot=plot_final,
-         width=7,
-         height=5,
-         units="in",
-         dpi=300)
-  
-  #final-pdf
-  ggsave(filename=fp_final_pdf,
-         plot=plot_final,
-         width=7,
-         height=5,
-         units="in",
-         dpi=300)
+  purrr::walk2(fps, plots, function(x, y){
+    ggsave(filename=x,
+           plot=y,
+           width=7,
+           height=5,
+           units="in",
+           dpi=300)
+  })
   
   # Print message
   plots_msg <- paste("Success: 4 plot files (PNG/PDF) exported for", 
@@ -100,7 +82,7 @@ export_summary <- function(suitcase){
       c("ED50 Estimate", "ED50 Std. Error", "ED50 95% CI (Lower)", "ED50 95% CI (Upper)", 
         "Slope (b)", "Lower Limit (c)", "Upper Limit (d)", "Asymmetry (f)", "AIC", 
         "Pseudo R-Squared", "Slope P-Value", "Residual Std. Error", "Model Type", "Fit Status", 
-        "Selection Rationale")
+        "Decision Rationale")
     )
   
   # Save to csv
