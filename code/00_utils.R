@@ -1,5 +1,6 @@
 # Helper Functions Used Throughout Project
 
+
 ## Function to dynamically combine elements into a string
 dynamic_paste <- function(vec, add_quotes=TRUE){
   n <- length(vec)

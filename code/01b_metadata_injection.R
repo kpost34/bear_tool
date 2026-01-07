@@ -1,4 +1,4 @@
-# Injects x and y axis labels used in plots for reports
+# Function to Inject User-Friendly Names and Labels
 
 
 add_metadata <- function(suitcase, x_name, x_unit, y_name, y_unit) {

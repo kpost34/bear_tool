@@ -1,4 +1,4 @@
-# Run entire pipeline
+# Run Entire Pipeline
 
 
 # Load Packages, Source Functions, & Initialize Filesystem==========================================

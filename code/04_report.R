@@ -1,4 +1,4 @@
-# Curve generation, final visualization, and summary table
+# Curve Generation, Final Visualization, and Summary Table Functions
 
 
 # Generate Curve====================================================================================
