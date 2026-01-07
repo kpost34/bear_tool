@@ -1,4 +1,4 @@
-# Model fitting and selection and parameter/metric extraction
+# Model Fitting and Selection and Parameter/Metric Extraction Functions
 
 
 # Initialize Modelling Audit Table==================================================================
@@ -20,18 +20,18 @@ init_modeling_audit <- function(suitcase){
 
 
 # Fit Model Safely==================================================================================
-fit_safely <- function(suitcase, model){
+fit_safely <- function(suitcase, mod_name){
   df <- suitcase$data
   
   # Store error message & model as function
-  model_clean <- str_remove(model, "\\.")
-  msg_error <- paste("Error:", model_clean, "model did not converge.")
+  mod_name_clean <- str_remove(mod_name, "\\.")
+  msg_error <- paste("Error:", mod_name_clean, "model did not converge.")
   
-  model_fn <- match.fun(model)
+  model_fn <- match.fun(mod_name)
   
   # Fit model
   #drc model
-  if(model %in% c("BC.5", "LL.4", "LL.3")){
+  if(mod_name %in% c("BC.5", "LL.4", "LL.3")){
     mod <- tryCatch(
       {
       drm(response ~ dose, data = df, fct = model_fn())
@@ -39,7 +39,7 @@ fit_safely <- function(suitcase, model){
       message(msg_error)
       NULL
     })
-  } else if(model=="LM"){
+  } else if(mod_name=="LM"){
     mod <- tryCatch(
       {
       lm(response ~ dose, data=df)
@@ -115,15 +115,15 @@ select_best_model <- function(suitcase){
   
   # Run sigmoid models
   #bc5
-  mod_bc5 <- fit_safely(suitcase, model="BC.5")
+  mod_bc5 <- fit_safely(suitcase, mod_name="BC.5")
   suitcase <- update_model_info(suitcase, mod=mod_bc5, mod_name="BC.5")
   
   #ll4
-  mod_ll4 <- fit_safely(suitcase, model="LL.4")
+  mod_ll4 <- fit_safely(suitcase, mod_name="LL.4")
   suitcase <- update_model_info(suitcase, mod=mod_ll4, mod_name="LL.4")
   
   #ll3
-  mod_ll3 <- fit_safely(suitcase, model="LL.3")
+  mod_ll3 <- fit_safely(suitcase, mod_name="LL.3")
   suitcase <- update_model_info(suitcase, mod=mod_ll3, mod_name="LL.3")
   
   mods_list <- list(BC.5=mod_bc5, LL.4=mod_ll4, LL.3=mod_ll3)
@@ -186,16 +186,7 @@ select_best_model <- function(suitcase){
       #update winner_found
       winner_found <- TRUE
       
-      #create rationale string
-      rationale_sig_txt <- if(n_sig>1){
-        paste("Sigmoid", sig_winner, "selected: Cleared 2-unit AIC threshold over simpler sigmoids;",
-              "slope significant (p < 0.05)")
-      } else if(n_sig==1){
-        paste("Sigmoid", sig_winner, "selected: Only converged sigmoid model; slope significant",
-              "(p < 0.05)")
-      }
-      
-      #update & return suitcase
+      #create winner_label
       sig_winner_label <- if(sig_winner=="BC.5"){
         "Brain-Cousens (Hormetic)"
       } else if(sig_winner=="LL.4"){
@@ -204,6 +195,16 @@ select_best_model <- function(suitcase){
         "Log-Logistic (Fixed Baseline)"
       }
       
+      #create rationale string
+      rationale_sig_txt <- if(n_sig>1){
+        paste(sig_winner_label, "selected: Cleared 2-unit AIC threshold over simpler sigmoids;",
+              "slope significant (p < 0.05)")
+      } else if(n_sig==1){
+        paste(sig_winner_label, "selected: Only converged sigmoid model; slope significant",
+              "(p < 0.05)")
+      }
+      
+      #update & return suitcase
       suitcase$modeling$winner <- mods_list[[sig_winner]]
       suitcase$modeling$winner_name <- sig_winner
       suitcase$modeling$winner_label <- sig_winner_label
@@ -216,7 +217,7 @@ select_best_model <- function(suitcase){
   # No sigmoids converged or best was not significant
   if(!winner_found){
     # Run LM
-    mod_lm <- fit_safely(suitcase, model="LM")
+    mod_lm <- fit_safely(suitcase, mod_name="LM")
     suitcase <- update_model_info(suitcase, mod=mod_lm, mod_name="LM")
     
     df_lm <- suitcase$modeling$audit
@@ -230,10 +231,11 @@ select_best_model <- function(suitcase){
       #update winner_found
       winner_found <- TRUE
       
+      #create rationale string
       rationale_lm_txt <- if(n_sig==0){
-        "Linear model selected: Sigmoidal models failed to converge."
-      } else if(n_sig>0){
-        "Linear model selected: Sigmoidal models converged but lacked significant slopes (p > 0.05)."
+        "Linear Trend selected: Sigmoidal models failed to converge; slope significant (p < 0.05)."
+      } else if(n_sig>0) {
+        "Linear Trend selected: Sigmoidal models converged but lacked significant slopes (p > 0.05); linear slope significant (p < 0.05)."
       }
       
       #update & return suitcase
@@ -250,13 +252,17 @@ select_best_model <- function(suitcase){
   # If winner still not found
   if(!winner_found){
     # Run Null
-    mod_null <- fit_safely(suitcase, model="Null")
+    mod_null <- fit_safely(suitcase, mod_name="Null")
     suitcase <- update_model_info(suitcase, mod=mod_null, mod_name="Null")
     
     #update winner_found
     winner_found <- TRUE
     
-    rationale_null_txt <- "No significant dose-response detected; falling back to Null model"
+    #create rationale string
+    rationale_null_txt <- paste(
+      "No Detectable Response: Models failed to converge or lacked a significant dose-response", 
+      "slope (p > 0.05); defaulting to intercept-only model."
+    )
     
     #update & return suitcase
     suitcase$modeling$winner <- mod_null
@@ -344,8 +350,8 @@ extract_winning_stats <- function(suitcase){
           ed50_se=sqrt(
             ed50_est^2 * ((intercept_lm_se/intercept_lm)^2 + (slope_lm_se/slope_lm)^2)
           ),
-          ed50_lower=ed50_est - (1.96*ed50_se),
-          ed50_upper=ed50_est + (1.96*ed50_se)
+          ed50_ci_low=ed50_est - (1.96*ed50_se),
+          ed50_ci_high=ed50_est + (1.96*ed50_se)
         )
       
       # Null
@@ -379,25 +385,17 @@ extract_winning_stats <- function(suitcase){
   }
     
   # All models: model info
-  rationale_model <- if(mod_name=="Null"){
-      "No significant relationship found."
-    }else if(mod_name=="LM"){
-      "Fits a line; slope is significant."
-    }else{
-      "Fits a curve; slope is significant"
-    }
-  
   df_model <- tibble(
     model_type=mod_name,
     status=if(mod_name=="Null"){"No Response Detected"} else{"Response Detected"},
-    rationale=rationale_model
+    rationale=suitcase$modeling$rationale
   )
   
   # Combine DFs
-  df_info <- bind_cols(df_ed, df_params, df_metrics, df_model)
+  df_results <- bind_cols(df_ed, df_params, df_metrics, df_model)
   
   # Update & return suitcase
-  suitcase$modeling$results <- df_info
+  suitcase$modeling$results <- df_results
   
   return(suitcase)
   
