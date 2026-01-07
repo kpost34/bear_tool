@@ -51,6 +51,16 @@ model_table <- my_suitcase$modeling$table
 
 ```
 
+`r if(snr >= 5) {
+"::: {.callout-note appearance='simple'}\n## [PASS] Robust Signal: This dataset provides high confidence for parameter estimation.\n:::"
+} else if(snr >= 3) {
+"::: {.callout-warning appearance='simple'}\n## [REVIEW] Acceptable Signal: Results are reliable, but observe confidence intervals.\n:::"
+} else {
+"::: {.callout-important appearance='simple'}\n## [CAUTION] Low Signal: Model results should be considered exploratory.\n:::"
+}`
+
+
+
 ## Data Quality & Suitability Audit
 ### Trial Robustness
 * **Signal-to-Noise Ratio (SNR):** The analysis of the dataset returned an SNR of `r snr`, which suggests `r if(snr>=5){
@@ -110,6 +120,24 @@ knitr::include_graphics(fp_audit_plot)
 
 
 ## Dose-Response Analysis & Parameter Estimation
+## Modeling Methodology
+The data were evaluated against a hierarchy of candidate models to determine the most statistically appropriate and biologically relevant representation of the dose-response relationship.
+
+### Selection Framework
+The best-fit model was determined using the following tiered decision logic:
+
+1. **Non-Linear Sigmoidal Evaluation**:
+   * Initial attempts were made to fit **Brain-Cousens (Hormetic)**, **Log-Logistic (Standard)**, and **Log-Logistic (Fixed Baseline)** models.
+   * If multiple models converged, a **parsimony check** was performed using the Akaike Information Criterion (AIC). A more complex model was only selected if it improved the fit by at least **2 AIC units** over its simpler counterpart.
+   * The resulting candidate was then required to demonstrate a **statistically significant slope** ($p < 0.05$).
+
+2. **Linear Fallback**:
+   * If sigmoidal models failed to converge or show significance, a **Linear Trend** was evaluated. This model was selected only if it achieved a significant dose-dependent slope ($p < 0.05$).
+
+3. **No Detectable Response (Null)**:
+   * If all previous attempts failed to detect a significant relationship, the dataset was categorized as having **No Detectable Response**, utilizing an intercept-only model.
+
+
 ### Model Selection
 `r if(model_name=="Null") { 
 paste("Evaluation of the dataset indicates", paste0("**", model_label, "**"), ". ", model_rationale) 
@@ -138,7 +166,14 @@ knitr::include_graphics(fp_final_plot)
 paste("The table below summarizes the statistical output and potency estimates for the", target_study, "dataset.")
 }`
 
-`r if(model_name != "Null") {model_table}`
+```{r}
+#| label: table-potency
+#| eval: !expr model_name != "Null"
+
+model_table
+
+```
+
 
 
 
