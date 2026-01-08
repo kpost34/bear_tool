@@ -1,7 +1,8 @@
-# Function to Inject User-Friendly Names and Labels
+# Function to Inject User-Friendly Names and Labels into Suitcase
 
 
 add_metadata <- function(suitcase, x_name, x_unit, y_name, y_unit) {
+  
   # Construct strings and store components
   suitcase$metadata <- list(
     x_name=x_name,

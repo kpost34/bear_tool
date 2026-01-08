@@ -2,6 +2,7 @@
 
 
 # Calculate Dose Stats==============================================================================
+# Aggregates group-wise metrics (Mean, SD, CV, IQR) for diagnostic auditing and outlier detection
 calc_dose_stats <- function(suitcase){
   df <- suitcase$data
   
@@ -30,6 +31,7 @@ calc_dose_stats <- function(suitcase){
 
 
 # Audit Variance====================================================================================
+# Identifies doses with excessive replicate noise by comparing individual CVs to the global median
 audit_variance <- function(suitcase){
   df <- suitcase$stats
   suitcase$high_cv_doses <- NULL
@@ -70,6 +72,8 @@ audit_variance <- function(suitcase){
 
 
 # Audit Distribution of Doses=======================================================================
+# Calculates the ratio between max/min doses to warn of limited ranges that may destabilize curve 
+  #fitting
 check_dose_range <- function(suitcase){
   df <- suitcase$data
   
@@ -104,6 +108,7 @@ check_dose_range <- function(suitcase){
 
 
 # Detect Outliers===================================================================================
+# Flags individual observations as outliers using the 1.5 * IQR (Tukey's) rule per dose group
 detect_outliers <- function(suitcase){
   suitcase$outlier_indices <- NULL
   
@@ -135,6 +140,7 @@ detect_outliers <- function(suitcase){
   
   # Outliers found
   if(n_outliers > 0){
+    
     #store message
     outlier_msg <- paste("Warning: Outliers detected at the following doses (n):",
                          paste0(str_outlier, "."),
@@ -157,6 +163,8 @@ detect_outliers <- function(suitcase){
 
 
 # Audit Monotonicity================================================================================
+# Assesses biological signal strength (SNR) and net direction; fails the suitcase if the response 
+  #is non-monotonic or flat
 audit_monotonicity <- function(suitcase){
   df <- suitcase$stats
   
@@ -181,6 +189,7 @@ audit_monotonicity <- function(suitcase){
   
   # Flat line
   if(df_mono$delta==0){
+    
     #store objs
     mono_status <- "Failed"
     mono_msg <- "Error: No response detected. The mean response at the highest dose is identical
@@ -190,7 +199,7 @@ audit_monotonicity <- function(suitcase){
     warning(mono_msg)
     
     #update & return suitcase
-    suitcase$status <- "Failed"
+    suitcase$status <- mono_status
     suitcase$message <- append_message(suitcase$message, mono_msg)
     suitcase$direction <- df_mono$direction
     
@@ -198,6 +207,7 @@ audit_monotonicity <- function(suitcase){
     
     # Non-monotonicity
   } else if(df_mono$mono_fail){
+    
     #store objs
     mono_status <- "Failed"
     mono_msg <- "Error: Non-monotonic data detected. Net displacement is insufficient relative to 
@@ -215,6 +225,7 @@ audit_monotonicity <- function(suitcase){
     
     # Low SNR
   } else if(snr<3){
+    
     #store message
     snr_msg <- "Warning: Low Signal-to-Noise Ratio (SNR < 3). Curve fit may be unreliable."
     
@@ -230,6 +241,7 @@ audit_monotonicity <- function(suitcase){
     
     # No flags
   } else{
+    
     #update & return suitcase
     suitcase$direction <- df_mono$direction
     suitcase$snr <- snr
@@ -242,6 +254,7 @@ audit_monotonicity <- function(suitcase){
 
 
 # Audit Plateau=====================================================================================
+# Evaluates the terminal slope of the data to determine if a stable top/bottom plateau was reached
 check_plateau <- function(suitcase){
   df <- suitcase$stats
   
@@ -281,31 +294,52 @@ check_plateau <- function(suitcase){
 
 
 # Audit Suitcase (function)=========================================================================
+#' Perform Statistical Diagnostics and Data Quality Audit
+#'
+#' Evaluates the statistical properties of the dataset to determine if it is 
+#' suitable for non-linear dose-response modeling. This function calculates 
+#' group-wise statistics and runs a battery of quality checks.
+#'
+#' @param suitcase List. The object initialized by `validate_data()` containing 
+#' the standardized tibble and project metadata.
+#'
+#' @return An updated 'suitcase' (list) containing new diagnostic elements:
+#' \itemize{
+#'   \item \code{stats}: A summary tibble of means, SDs, CVs, and IQRs per dose.
+#'   \item \code{high_cv_doses}: A vector of doses where replicate variance is double the median.
+#'   \item \code{outlier_indices}: A vector of IDs flagged using the 1.5 * IQR rule.
+#'   \item \code{snr}: The Signal-to-Noise Ratio (Span of means / Pooled SD).
+#'   \item \code{direction}: "Inhibition" or "Activation" based on net response.
+#'   \item \code{at_plateau}: Logical. Indicates if the response reached a terminal plateau.
+#'   \item \code{status}: Updated to "Failed" if data is non-monotonic or lacks a signal.
+#' }
 audit_suitcase <- function(suitcase){
+  
   # 1. Prepare stats (foundation for all audits)
   suitcase <- calc_dose_stats(suitcase)
   
-  # 2.Run series of checks
+  # 2. Run series of quality checks
+  # Note: audit_monotonicity acts as the Gatekeeper for suitcase$status
   suitcase <- suitcase %>%
     audit_variance() %>%
     check_dose_range() %>%
     detect_outliers() %>%
-    audit_monotonicity() #gatekeeper (sets Status)
+    audit_monotonicity() 
   
-  # 3. Conditionally final check
-  #only check plateau if it hasn't already failed monotonicity
-  if(suitcase$status=="Success"){
+  # 3. Final Plateau Check 
+  # Only assessed if the dataset shows a monotonic trend
+  if(suitcase$status == "Success"){
     suitcase <- check_plateau(suitcase)
   }
   
   return(suitcase)
-  
 }
 
 
 
 # Create Plot=======================================================================================
 visualize_audit <- function(suitcase){
+  
   # Create theming
   status <- suitcase$status
   

@@ -2,7 +2,25 @@
 
 
 # Generate Curve====================================================================================
+#' Generate High-Resolution Model Predictions
+#'
+#' Creates a smooth prediction curve for visualization by generating 100 
+#' log-spaced dose points across the experimental range. It handles the "Zero 
+#' Dose" problem by shifting the lower bound to 50% of the lowest non-zero 
+#' dose, ensuring the curve extends naturally on log-scale axes.
+#'
+#' @param suitcase List. Must contain the validated 'data' and the 'winner' 
+#' model object.
+#'
+#' @return An updated suitcase containing \code{modeling$predictions}: 
+#' A tibble of 100 points with columns:
+#' \itemize{
+#'   \item \code{dose}: Log-spaced dose levels.
+#'   \item \code{prediction}: The fitted response value.
+#'   \item \code{lower} / \code{upper}: 95% confidence intervals for the fit.
+#' }
 generate_prediction_data <- function(suitcase){
+  
   # Extract parts of suitcase
   df_data <- suitcase$data
   mod <- suitcase$modeling$winner
@@ -38,7 +56,7 @@ generate_prediction_data <- function(suitcase){
     clean_names() %>%
     as_tibble()
   
-  #update & return suitcase
+  # Update & return suitcase
   suitcase$modeling$predictions <- df_curve
   
   return(suitcase)
@@ -47,7 +65,25 @@ generate_prediction_data <- function(suitcase){
 
 
 # Visualize Results=================================================================================
+#' Generate Primary Dose-Response Visualization
+#'
+#' Constructs a publication-quality ggplot2 object. The plot layers raw 
+#' observations, the fitted model line, and a 95% confidence interval ribbon. 
+#' It utilizes a log-transformed x-axis and dynamically places statistical 
+#' annotations (ED50 and R-squared) based on the model's performance.
+#'
+#' @param suitcase List. Must contain 'data', 'predictions', 'results', and 'metadata'.
+#'
+#' @return An updated suitcase containing \code{modeling$plot}: A ggplot object 
+#' with the following features:
+#' \itemize{
+#'   \item \code{geom_ribbon}: Represents the 95% confidence interval of the fit.
+#'   \item \code{geom_line}: The smooth prediction curve across the dose range.
+#'   \item \code{scale_x_log10}: Standardized log-scale with breaks set to actual doses.
+#'   \item \code{annotate}: Mathematical expressions for ED50 and R-squared.
+#' }
 visualize_results <- function(suitcase){
+  
   # Extract & store obj related to data
   mod_name <- suitcase$modeling$winner_name
   df_curve <- suitcase$modeling$predictions
@@ -106,7 +142,7 @@ visualize_results <- function(suitcase){
          y=response_lab) +
     theme_bw() 
   
-  #update & return suitcase
+  # Update & return suitcase
   suitcase$modeling$plot <- plot_obj
 
   return(suitcase)
@@ -115,7 +151,10 @@ visualize_results <- function(suitcase){
 
 
 # Get Summary Table=================================================================================
+# Formats model results into a publication-ready interactive table (DT) featuring Unicode math 
+  #symbols and selection rationale
 get_summary_table <- function(suitcase){
+  
   # Extract results
   df_results <- suitcase$modeling$results
   

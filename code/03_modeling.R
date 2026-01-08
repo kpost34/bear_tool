@@ -2,8 +2,11 @@
 
 
 # Initialize Modelling Audit Table==================================================================
+# Initializes a tracking table to log convergence, AIC, and slope significance for all candidate 
+  #models
 init_modeling_audit <- function(suitcase){
-  #create empty DF
+  
+  # Create empty DF
   df <- tibble(
     model=c("BC.5", "LL.4", "LL.3", "LM", "Null"),
     converged=rep(NA, 5),
@@ -11,7 +14,7 @@ init_modeling_audit <- function(suitcase){
     slope_p=rep(NA, 5)
   )
   
-  #update & return suitcase
+  # Update & return suitcase
   suitcase$modeling$audit <- df
   
   return(suitcase)
@@ -20,6 +23,15 @@ init_modeling_audit <- function(suitcase){
 
 
 # Fit Model Safely==================================================================================
+#' Fit Dose-Response Model with Error Handling
+#'
+#' A defensive wrapper around drc::drm and stats::lm. Prevents the pipeline 
+#' from crashing during batch processing by catching convergence errors 
+#' and returning NULL for failed fits.
+#'
+#' @param suitcase List. The analysis object containing the training data.
+#' @param mod_name String. The specific model identifier (e.g., "BC.5", "LL.4", "LM").
+#' @return A model object if convergence is successful; NULL if the fit fails.
 fit_safely <- function(suitcase, mod_name){
   df <- suitcase$data
   
@@ -64,7 +76,10 @@ fit_safely <- function(suitcase, mod_name){
 
 
 # Update Model Information==========================================================================
+# Populates the modeling audit table with performance metrics (AIC, p-values) from a successfully 
+  #fitted model
 update_model_info <- function(suitcase, mod, mod_name){
+  
   # Extract audit DF
   df <- suitcase$modeling$audit
   
@@ -105,7 +120,28 @@ update_model_info <- function(suitcase, mod, mod_name){
 
 
 # Select Best Model=================================================================================
+#' Automated Hierarchy-Based Model Selection
+#'
+#' Executes a tiered selection strategy to identify the most parsimonious 
+#' biological model. The hierarchy follows: Hormetic (BC.5) > Sigmoidal (LL.4/3) 
+#' > Linear (LM) > Null. 
+#' 
+#' Selection is governed by:
+#' 1. Convergence: Model must successfully solve.
+#' 2. Significance: The dose-response slope must be significant (p < 0.05).
+#' 3. Parsimony: Complex models must outperform simpler ones by > 2 AIC units.
+#'
+#' @param suitcase List. The audited suitcase containing clean data.
+#' @return An updated suitcase with the following 'modeling' elements:
+#' \itemize{
+#'   \item \code{winner}: The winning model object (drc or lm).
+#'   \item \code{winner_label}: A user-friendly name for the selected trend.
+#'   \item \code{rationale}: A plain-English explanation of the selection logic 
+#'         for report generation.
+#'   \item \code{audit}: A dataframe tracking the performance of all attempted models.
+#' }
 select_best_model <- function(suitcase){
+  
   # Seed objs for logic tree
   winner_found <- FALSE
   slope_p_signif <- FALSE
@@ -183,6 +219,7 @@ select_best_model <- function(suitcase){
     
     # If slope_p significant
     if(slope_p_signif){
+      
       #update winner_found
       winner_found <- TRUE
       
@@ -216,6 +253,7 @@ select_best_model <- function(suitcase){
     
   # No sigmoids converged or best was not significant
   if(!winner_found){
+    
     # Run LM
     mod_lm <- fit_safely(suitcase, mod_name="LM")
     suitcase <- update_model_info(suitcase, mod=mod_lm, mod_name="LM")
@@ -228,6 +266,7 @@ select_best_model <- function(suitcase){
     
     # If slope_p significant
     if(slope_p_signif){
+      
       #update winner_found
       winner_found <- TRUE
       
@@ -251,6 +290,7 @@ select_best_model <- function(suitcase){
   
   # If winner still not found
   if(!winner_found){
+    
     # Run Null
     mod_null <- fit_safely(suitcase, mod_name="Null")
     suitcase <- update_model_info(suitcase, mod=mod_null, mod_name="Null")
@@ -279,6 +319,8 @@ select_best_model <- function(suitcase){
 
 # Extract Winning Stats=============================================================================
 ## Subfunction
+# Maps technical 'drc' parameter names (b, c, d, f) to human-readable biological terms (slope, 
+  #lower/upper bounds)
 rename_params <- function(names) { 
   dplyr::case_when( 
     str_starts(names, "b") ~ "slope_b", 
@@ -291,6 +333,8 @@ rename_params <- function(names) {
 
 
 ## Function
+# Consolidates ED50 estimates, model parameters, and performance metrics into a single standardized 
+  #results tibble
 extract_winning_stats <- function(suitcase){
   # Extract model and model name
   mod <- suitcase$modeling$winner
@@ -316,6 +360,7 @@ extract_winning_stats <- function(suitcase){
   # Build DF
   ## Sigmoids
   if(str_detect(mod_name, "LL|BC")){
+    
     #ed
     df_ed <- ED(mod, 50, interval="delta", display=FALSE) %>% 
       as_tibble() %>%
@@ -340,10 +385,13 @@ extract_winning_stats <- function(suitcase){
       p_val_slope=summary(mod)$coefficients["b:(Intercept)", "p-value"],
       resid_std_error=summary(mod)$rseMat[1, 1]
     )
+    
     # Non-sigmoids
   } else if(mod_name %in% c("LM", "Null")){
+    
+    ## LM 
     if(mod_name=="LM"){
-      ## LM 
+
       #ed
       df_ed <- tibble(ed50_est=ed50 <- (-0.5*intercept_lm)/slope_lm) %>%
         mutate(

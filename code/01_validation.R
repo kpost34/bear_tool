@@ -2,7 +2,9 @@
 
 
 # Data Import=======================================================================================
+# Import raw data from local files (.csv, .xlsx) or R packages
 import_data <- function(source, path, dataset_name, pkg){
+  
   # Files
   if(source=="file"){
     ext <- tools::file_ext(path)
@@ -12,7 +14,6 @@ import_data <- function(source, path, dataset_name, pkg){
       raw_data <- read_excel(path) %>%
         as.data.frame()
     }
-
     #store message
     import_msg <- "Success: Raw data imported from file."
     
@@ -33,7 +34,9 @@ import_data <- function(source, path, dataset_name, pkg){
 
 
 # Check ID==========================================================================================
+# Initialize 'suitcase' list and standardize the ID column; promotes rownames if no ID is provided
 check_id <- function(df, dataset_name, target_id_col=NA){
+  
   # If user-defined target_id_col absent
   if(!is.na(target_id_col) & !target_id_col %in% names(df)){
     #store obj
@@ -46,6 +49,7 @@ check_id <- function(df, dataset_name, target_id_col=NA){
     )
     #print msg
     warning(id_msg)
+    
     #package obj
     suitcase=list(
       status=id_status,
@@ -82,6 +86,7 @@ check_id <- function(df, dataset_name, target_id_col=NA){
           #print message
           message(id_msg)
       }
+      
       #package objects
       suitcase=list(
         data=df,
@@ -99,6 +104,8 @@ check_id <- function(df, dataset_name, target_id_col=NA){
 
 
 # Check Presence====================================================================================
+# Verify existence of user-specified dose/response columns and rename them to standard 'dose' and 
+  #'response'
 check_presence <- function(suitcase, target_dose_col, target_response_col){
   df <- suitcase$data
   
@@ -110,9 +117,9 @@ check_presence <- function(suitcase, target_dose_col, target_response_col){
   n_cols_abs <- length(missing_user_names)
   str_cols_abs <- dynamic_paste(missing_user_names)
   
-  
   # If one or both cols are missing
   if(n_cols_abs>0){
+    
     #store objs
     pres_status <- "Failed"
     pres_msg <- paste("Error: ",
@@ -149,6 +156,7 @@ check_presence <- function(suitcase, target_dose_col, target_response_col){
 
 
 # Check Numeric=====================================================================================
+# Ensure dose and response columns contain numeric data to prevent modeling crashes
 check_numeric <- function(suitcase){
   df <- suitcase$data
   
@@ -194,6 +202,7 @@ check_numeric <- function(suitcase){
 
 
 # Check Missingness=================================================================================
+# Enforce a 5% missing data threshold; drops NAs if under the limit or fails the gate if exceeded
 check_missingness <- function(suitcase){
   df <- suitcase$data
   
@@ -243,7 +252,8 @@ check_missingness <- function(suitcase){
 
 
 # Check Zero and Negative Values=====================================================================
-## Subsubfunction
+## Subfunction
+# Counts occurrences of zero or negative values in a specified column
 count_neg_zero_values <- function(df, col, value){
   n <- if(value=="neg"){
     df %>%
@@ -258,7 +268,8 @@ count_neg_zero_values <- function(df, col, value){
 }
 
 
-## Subfunction
+## Function
+# Audit data for biological validity (e.g., negative doses/responses) and checks for control groups
 check_values <- function(suitcase){
   df <- suitcase$data
   
@@ -326,6 +337,8 @@ check_values <- function(suitcase){
 
 
 # Check Minimum Observations========================================================================
+# Enforce minimum data density requirements (min 5 doses and 15 total observations) for stable curve 
+  #fitting
 check_min_obs <- function(suitcase){
   df <- suitcase$data
   
@@ -367,31 +380,52 @@ check_min_obs <- function(suitcase){
 
 
 # Validate Data (function)==========================================================================
+#' Orchestrate Data Validation Pipeline (Gatekeeper)
+#'
+#' Executes a tiered validation sequence to ensure data integrity before modeling. 
+#' The function uses a "Gate" logic: if a critical failure occurs in an early check 
+#' (e.g., missing columns), subsequent checks are skipped to prevent crashes.
+#'
+#' @param df Dataframe. The raw dataset to be validated.
+#' @param dataset_name String. A user-friendly label for the dataset used in reporting.
+#' @param target_id_col String (Optional). The name of the column containing unique identifiers.
+#' @param target_dose_col String. The name of the column containing dosage levels.
+#' @param target_response_col String. The name of the column containing response values.
+#'
+#' @return A 'suitcase' (list) containing:
+#' \itemize{
+#'   \item \code{data}: The cleaned tibble with standardized column names (id, dose, response).
+#'   \item \code{dataset_name}: The label used for file naming and plot titles.
+#'   \item \code{status}: "Success" or "Failed" based on critical gate checks.
+#'   \item \code{message}: A character vector of errors, warnings, and notes generated during audit.
+#'   \item \code{id_label}: The original name of the ID column for metadata tracking.
+#' }
 validate_data <- function(df, dataset_name, target_id_col=NA, target_dose_col, target_response_col){
-  # 1. Initialize Suitcase
+  
+  # 1. Initialize Suitcase (ID Check & Standardization)
   suitcase <- check_id(df, dataset_name, target_id_col=target_id_col)
   
-  # 2. Presence Gate
+  # 2. Presence Gate (Check if Dose/Response columns exist)
   if(suitcase$status=="Success"){
     suitcase <- check_presence(suitcase, target_dose_col, target_response_col)
   }
   
-  # 3. Numeric Gate
+  # 3. Numeric Gate (Ensure Dose/Response are numbers)
   if(suitcase$status=="Success"){
     suitcase <- check_numeric(suitcase)
   }
   
-  # 4. Missingness Gate
+  # 4. Missingness Gate (Check < 5% NA threshold)
   if(suitcase$status=="Success"){
     suitcase <- check_missingness(suitcase)
   }
   
-  # 5. Value Audit (Negatives/Zeroes)
+  # 5. Value Audit (Check for negative doses/responses)
   if(suitcase$status=="Success"){
     suitcase <- check_values(suitcase)
   }
   
-  # 6. Minimum Observation Gate
+  # 6. Minimum Observation Gate (Check for enough doses/reps)
   if(suitcase$status=="Success"){
     suitcase <- check_min_obs(suitcase)
   }
