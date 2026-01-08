@@ -20,37 +20,57 @@ execute:
 #| label: setup
 #| include: false
 
-# Import libraries
+# Import libraries 
 library(here)
 library(tidyverse)
 
-# Set target study
-target_study <- params$target_study
 
-# Create fps
-fp_audit_plot <- paste0("output/plots/", target_study, "_audit_plot.png")
 
-fp_final_plot <- paste0("output/plots/", target_study, "_final_curve.png")
-
-df_stats <- here("output", "tables", paste0(target_study, "_summary_stats.csv")) %>%
-  read.csv()
-
-my_suitcase <- here("output", "models", paste0(target_study, "_full_suitcase.rds")) %>%
+# 1. Load suitcase
+my_suitcase <- here("output", "models", paste0(params$target_study, "_full_suitcase.rds")) %>%
                       readRDS()
 
-# Define objects
-snr <- round(my_suitcase$snr, 2)
-dose_ratio <- round(my_suitcase$dose_ratio, 2)
-n_outliers <- length(my_suitcase$outlier_indices)
-at_plateau <- my_suitcase$at_plateau
 
-model_name <- my_suitcase$modeling$winner_name
-model_label <- my_suitcase$modeling$winner_label
-model_rationale <- my_suitcase$modeling$rationale
-model_table <- my_suitcase$modeling$table
+# 2. Define a "Pass" flag
+pass_structural <- my_suitcase$status != "Failed"
+
+
+# 3. Only attempt to define downstream objects if validation passed
+if(pass_structural) {
+  target_study <- params$target_study
+  fp_audit_plot <- paste0("output/plots/", target_study, "_audit_plot.png")
+  fp_final_plot <- paste0("output/plots/", target_study, "_final_curve.png")
+
+  # Only try to read the CSV if modeling actually ran
+  if(!is.null(my_suitcase$modeling$results)) {
+    df_stats <- here("output", "tables", paste0(target_study, "_summary_stats.csv")) %>%
+      read.csv()
+  }
+  
+  # Define display objects
+  snr <- round(my_suitcase$snr %||% 0, 2)
+  dose_ratio <- round(my_suitcase$dose_ratio %||% 0, 2)
+  n_outliers <- length(my_suitcase$outlier_indices)
+  at_plateau <- my_suitcase$at_plateau
+  
+  model_name <- my_suitcase$modeling$winner_name
+  model_label <- my_suitcase$modeling$winner_label
+  model_rationale <- my_suitcase$modeling$rationale
+  model_table <- my_suitcase$modeling$table
+}
 
 ```
 
+<!-- "Fatal Error" Banner -->
+`r if(my_suitcase$status == "Failed") {
+"::: {.callout-important}\n## ❌ Critical Error: Pipeline Halted\n"
+}`
+`r if(my_suitcase$status == "Failed") {
+  paste0("**Validation Message:** ", my_suitcase$message, "\n:::")
+}`
+
+
+<!-- SNR Banner -->
 `r if(snr >= 5) {
 "::: {.callout-note appearance='simple'}\n## [PASS] Robust Signal: This dataset provides high confidence for parameter estimation.\n:::"
 } else if(snr >= 3) {
@@ -110,6 +130,7 @@ The following figure illustrates the distribution of raw data points (replicates
 
 ```{r} 
 #| label: fig-audit
+#| eval: !expr pass_structural
 #| fig-cap: "Visual Audit: Distribution of raw replicates across dose levels."
 #| fig-align: center
 #| out-width: "7in"
@@ -150,6 +171,7 @@ paste("The biological response was characterized using a", paste0("**", model_la
 
 ```{r} 
 #| label: fig-final
+#| eval: !expr pass_structural && !is.null(my_suitcase$modeling$plot)
 #| fig-cap: !expr "paste('Final Dose-Response Curve: Fitted model for', my_suitcase$metadata$y_name)"
 #| fig-align: center
 #| out-width: "7in"
@@ -159,7 +181,7 @@ knitr::include_graphics(fp_final_plot)
 ```
 
 
-## Primary Potency Parameters
+## Model Performance & Estimates
 `r if(model_name=="Null") {
 "No potency parameters could be calculated."
 } else{
