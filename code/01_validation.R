@@ -283,7 +283,7 @@ check_values <- function(suitcase){
   if(n_neg_doses>0){
     #store objs
     values_status <- "Failed"
-    neg_doses_msg <- paste("Error:", n_neg_doses, "doses detected.")
+    neg_doses_msg <- paste("Error:", n_neg_doses, "negative doses detected.")
     
     #print warning
     warning(neg_doses_msg)
