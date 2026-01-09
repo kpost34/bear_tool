@@ -128,7 +128,7 @@ visualize_results <- function(suitcase){
                color="gray40", alpha=0.6) +
     scale_x_log10(
       breaks=doses,
-      labels=as.character(doses),
+      labels=c("0", as.character(doses[-1])),
       minor_breaks=NULL
       ) +
     scale_y_continuous(expand = expansion(mult = c(0.05, 0.1))) +
