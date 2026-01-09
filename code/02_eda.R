@@ -184,8 +184,10 @@ audit_monotonicity <- function(suitcase){
       mono_fail=mono_ratio<0.1
     )
   
-  # Calculate pooled SNR
+  # Calculate pooled SNR & assign it and direction to suitcase
   snr <- df_mono$span/mean(df$sd_response)
+  suitcase$direction <- df_mono$direction
+  suitcase$snr <- snr
   
   # Flat line
   if(df_mono$delta==0){
@@ -198,12 +200,9 @@ audit_monotonicity <- function(suitcase){
     #print warning
     warning(mono_msg)
     
-    #update & return suitcase
+    #update suitcase
     suitcase$status <- mono_status
     suitcase$message <- append_message(suitcase$message, mono_msg)
-    suitcase$direction <- df_mono$direction
-    
-    return(suitcase)
     
     # Non-monotonicity
   } else if(df_mono$mono_fail){
@@ -216,12 +215,9 @@ audit_monotonicity <- function(suitcase){
     #print warning
     warning(mono_msg)
     
-    #update & return suitcase
+    #update suitcase
     suitcase$status <- mono_status
     suitcase$message <- append_message(suitcase$message, mono_msg)
-    suitcase$direction <- df_mono$direction
-    
-    return(suitcase)
     
     # Low SNR
   } else if(snr<3){
@@ -232,22 +228,13 @@ audit_monotonicity <- function(suitcase){
     #print warning
     warning(snr_msg)
     
-    #update & return suitcase
-    suitcase$direction <- df_mono$direction
-    suitcase$snr <- snr
+    #update suitcase
     suitcase$message <- append_message(suitcase$message, snr_msg)
     
-    return(suitcase)
-    
-    # No flags
-  } else{
-    
-    #update & return suitcase
-    suitcase$direction <- df_mono$direction
-    suitcase$snr <- snr
-    
-    return(suitcase)
-  }
+  } 
+  
+  # Return suitcase
+  return(suitcase)
 
 }
 
@@ -275,7 +262,7 @@ check_plateau <- function(suitcase){
   # Large terminal shift
   if(shift_large){
     #store message
-    plateau_msg <- "Warning: Top plateau not reached. EC50 estimation may be extrapolated."
+    plateau_msg <- "Warning: Terminal plateau not reached. EC50 estimation may be extrapolated."
     
     #print warning
     warning(plateau_msg)
