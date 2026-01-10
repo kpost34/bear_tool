@@ -262,7 +262,7 @@ check_plateau <- function(suitcase){
   # Large terminal shift
   if(shift_large){
     #store message
-    plateau_msg <- "Warning: Terminal plateau not reached. EC50 estimation may be extrapolated."
+    plateau_msg <- "Warning: Terminal plateau not reached. ED50 estimation may be extrapolated."
     
     #print warning
     warning(plateau_msg)
