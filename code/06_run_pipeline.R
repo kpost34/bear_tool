@@ -26,20 +26,20 @@ initialize_filesystem()
 
 # User Configuration================================================================================
 ## Identify the study and mapping
-target_name <- "ryegrass"
+target_name <- "leaflength"
 
 
 ## Mapping: Define which columns in your raw data map to the analysis
 col_id       <- NA
-col_dose     <- "conc"
-col_response <- "rootl"
+col_dose     <- "Dose"
+col_response <- "DW"
 
 
 ## Metadata: Human-readable labels for plots and tables
-meta_x_name  <- "Concentration"
-meta_x_unit  <- "mM"
-meta_y_name  <- "Root Length"
-meta_y_unit  <- "mm"
+meta_x_name  <- "Herbicide Concentration"
+meta_x_unit  <- "mg/L"
+meta_y_name  <- "Leaf Length"
+meta_y_unit  <- "cm"
 
 
 
@@ -89,7 +89,7 @@ if(my_suitcase$status == "Success") {
       get_summary_table() %>%
       visualize_results()
     
-      message(">>> Success: Full analysis completed for", target_name)
+      message(">>> Success: Full analysis completed for ", target_name)
     
   } else {
     message(">>> Warning: Biological Audit Failed: Results limited to diagnostics.")
