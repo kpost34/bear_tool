@@ -44,10 +44,17 @@ generate_prediction_data <- function(suitcase){
   
   # Build DF of dose-response data
   df_dose_curve <- data.frame(dose=dose_curve)
+  
   df_response_curve <- suppressWarnings(
-    predict(mod, newdata=df_dose_curve,
-    interval="confidence")
+    predict(mod, newdata=df_dose_curve, interval="confidence") %>%
+      as.data.frame()
   )
+  
+  #normalize column names for lm() and Null models
+  if("fit" %in% names(df_response_curve)) {
+    df_response_curve <- df_response_curve %>%
+      dplyr::rename(prediction="fit", lower="lwr", upper="upr")
+  }
   
   df_curve <- bind_cols(
     df_dose_curve,
@@ -109,9 +116,14 @@ visualize_results <- function(suitcase){
   # Build annotations
   ed50 <- suitcase$modeling$results$ed50_est
   ed50_lab <- if(!is.na(ed50)){
+    ## Case 1: Success
     paste0("ED[50]*':'~", round(ed50, 2))
-  } else{
+  } else if(mod_name=="Null") {
+    ## Case 2: True Null model
     "No~Significant~Response"
+  } else {
+    ## Case 3: Valid model (like BC), but ED calculation failed
+    "ED[50]*':'~Inestimable"
   }
   
   r2 <- suitcase$modeling$results$r2_pseudo
