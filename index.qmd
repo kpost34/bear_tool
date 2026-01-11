@@ -159,7 +159,7 @@ The following figure illustrates the distribution of raw data points (replicates
 ```{r} 
 #| label: fig-audit
 #| eval: !expr pass_audit
-#| fig-cap: "Visual Audit: Distribution of raw replicates across dose levels."
+#| fig-cap: "Visual Audit: Distribution of raw replicates across dose levels"
 #| fig-align: center
 #| out-width: "7in"
 
@@ -199,7 +199,7 @@ The best-fit model was determined using the following tiered decision logic:
 
 ### Model Selection
 `r if(model_name=="Null") { 
-paste("Evaluation of the dataset indicates", paste0("**", model_label, "**"), ". ", model_rationale) 
+paste("Evaluation of the dataset indicates", paste0("**", model_label, "**"), ". ", paste0(model_rationale, "."))
 } else{ 
 paste("The biological response was characterized using a", paste0("**", model_label, "**"), "function. This selection was based on the following criteria:", paste0(model_rationale, "."))
 }`
