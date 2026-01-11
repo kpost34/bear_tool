@@ -25,27 +25,28 @@ initialize_filesystem()
 
 
 # User Configuration================================================================================
-## Identify the study and mapping
-target_name <- "leaflength"
+## Identify the study, path (if nec), and mapping
+target_name <- "chaos_data"
+fp_data <- here("data", paste0(target_name, ".csv"))
 
 
 ## Mapping: Define which columns in your raw data map to the analysis
 col_id       <- NA
-col_dose     <- "Dose"
-col_response <- "DW"
+col_dose     <- "conc"
+col_response <- "resp"
 
 
 ## Metadata: Human-readable labels for plots and tables
-meta_x_name  <- "Herbicide Concentration"
+meta_x_name  <- "Dose"
 meta_x_unit  <- "mg/L"
-meta_y_name  <- "Leaf Length"
-meta_y_unit  <- "cm"
+meta_y_name  <- "Growth"
+meta_y_unit  <- "mg"
 
 
 
 # Data Acquisition==================================================================================
-df_raw_data <- import_data(source="package", dataset_name=target_name, pkg="drc")
-
+# df_raw_data <- import_data(source="package", dataset_name=target_name, pkg="drc")
+df_raw_data <- import_data(source="file", path=fp_data)
 
 
 # Run Pipeline======================================================================================
