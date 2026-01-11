@@ -9,9 +9,9 @@ The BEAR Tool was engineered to replace manual, inconsistent curve-fitting with 
 ## Analysis Gallery
 These reports demonstrate BEAR's adaptive logic across varying data quality scenarios:
 
-* [Standard Sigmoidal Fit (Success)](https://kpost34.github.io/bear_pipeline_analysis/) – Full potency estimation and model selection.
-* [Biological Audit Failure (Chaos)](https://kpost34.github.io/bear_pipeline_analysis/chaos_report.html) – Automated "kill-switch" and diagnostic-only mode.
-* [No Detectable Response (Null)](https://kpost34.github.io/bear_pipeline_analysis/null_report.html) – Intercept-only fallback for high-noise datasets.
+* [Standard Sigmoidal Fit (Success)](https://kpost34.github.io/bear_tool/) – Full potency estimation and model selection.
+* [Biological Audit Failure (Chaos)](https://kpost34.github.io/bear_tool/chaos_report.html) – Automated "kill-switch" and diagnostic-only mode.
+* [No Detectable Response (Null)](https://kpost34.github.io/bear_tool/null_report.html) – Intercept-only fallback for high-noise datasets.
 
 ---
 
